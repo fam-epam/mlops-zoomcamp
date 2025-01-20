@@ -74,13 +74,30 @@ def run_register_model(data_path: str, top_n: int):
     best_run = client.search_runs(
         experiment_ids=experiment.experiment_id,
         max_results=1,
-        order_by=["metrics.rmse ASC"]
+        order_by=["metrics.test_rmse ASC"]
     )[0]
 
     # Register the best model
     run_id = best_run.info.run_id
     model_uri = f"runs:/{run_id}/models"
-    mlflow.register_model(model_uri=model_uri, name="nyc-taxi-regressor")
+    best_model_name = "nyc-taxi-regressor"
+
+    mlflow.register_model(
+        model_uri=model_uri, 
+        name=best_model_name
+        )
+    
+    # Update the metadata of the newly registered model
+    client.update_registered_model(
+        name=best_model_name,
+        description="The best model for the NYC Taxi Regressor"
+    )
+
+    # create an alias for dev
+    model = client.get_registered_model(best_model_name)
+    client.set_registered_model_alias( name=best_model_name, alias="dev", version=model.latest_versions[0].version)
+    client.set_registered_model_tag(best_model_name, "homework", "m2")
+
 
 
 if __name__ == '__main__':
